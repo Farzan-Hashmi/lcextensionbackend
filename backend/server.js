@@ -160,43 +160,54 @@ app.post("/api/data", async (req, res) => {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    // 1. Get structured answer from OpenAI
-    const [problemDescription, solutionExplanationAndCode] = await Promise.all([
-      generateProblemDescription(description),
-      generateCodeResponse(message),
-    ]);
-
-    const result = {
-      problemDescription,
-      solutionExplanation: solutionExplanationAndCode.solutionExplanation,
-      code: solutionExplanationAndCode.code,
-    };
-
-    // 2. Create the Flashcard in Mochi automatically using the code portion
-    // We run this await so we can confirm success to the frontend,
-    // or you can remove 'await' to run it in the background.
-    console.log("Creating Mochi card...");
-    const mochiCard = await createMochiCard(
-      problemDescription,
-      result.solutionExplanation,
-      result.code
-    );
-
-    if (mochiCard) {
-      console.log(`✅ Card created in Mochi: ${mochiCard.id}`);
-    }
-
-    // 3. Return the result (and optionally the card ID)
+    // Immediately return success response
     res.json({
-      ...result,
-      mochiCardId: mochiCard ? mochiCard.id : null,
+      status: "submitted",
+      message: "Now processing",
     });
+
+    // Process in the background (fire and forget)
+    (async () => {
+      try {
+        // 1. Get structured answer from OpenAI
+        const [problemDescription, solutionExplanationAndCode] =
+          await Promise.all([
+            generateProblemDescription(description),
+            generateCodeResponse(message),
+          ]);
+
+        const result = {
+          problemDescription,
+          solutionExplanation: solutionExplanationAndCode.solutionExplanation,
+          code: solutionExplanationAndCode.code,
+        };
+
+        // 2. Create the Flashcard in Mochi automatically using the code portion
+        console.log("Creating Mochi card...");
+        const mochiCard = await createMochiCard(
+          problemDescription,
+          result.solutionExplanation,
+          result.code
+        );
+
+        if (mochiCard) {
+          console.log(`✅ Card created in Mochi: ${mochiCard.id}`);
+        }
+
+        console.log("✅ Processing completed successfully");
+      } catch (error) {
+        console.error("Error in background processing:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error occurred";
+        console.error("Error details:", errorMessage);
+      }
+    })();
   } catch (error) {
-    console.error("Error generating response:", error);
+    console.error("Error handling request:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred";
     res.status(500).json({
-      error: "Failed to generate response",
+      error: "Failed to submit request",
       details: errorMessage,
     });
   }
