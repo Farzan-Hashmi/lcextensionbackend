@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import OpenAI from "openai";
+import { existsSync } from "fs";
 // If you are on Node < 18, you might need: import fetch from "node-fetch";
 
 dotenv.config();
@@ -201,17 +202,39 @@ app.post("/api/data", async (req, res) => {
 
 // Serve static files from React app build directory
 const buildPath = path.join(__dirname, "..", "frontend", "dist");
-app.use(express.static(buildPath));
+console.log(`Looking for frontend build at: ${buildPath}`);
 
-// Catch all handler
-app.get("*", (req, res) => {
-  if (req.path.startsWith("/api")) {
-    return res.status(404).json({ error: "API endpoint not found" });
-  }
-  res.sendFile(path.join(buildPath, "index.html"));
-});
+if (existsSync(buildPath)) {
+  console.log(`✅ Frontend build found at ${buildPath}`);
+  app.use(express.static(buildPath));
+
+  // Catch all handler
+  app.get("*", (req, res) => {
+    if (req.path.startsWith("/api")) {
+      return res.status(404).json({ error: "API endpoint not found" });
+    }
+    res.sendFile(path.join(buildPath, "index.html"));
+  });
+} else {
+  console.warn(`⚠️  Frontend build directory not found at ${buildPath}`);
+  console.warn(
+    "⚠️  API endpoints will still work, but frontend will not be served"
+  );
+
+  // Still handle API routes
+  app.get("*", (req, res) => {
+    if (req.path.startsWith("/api")) {
+      return res.status(404).json({ error: "API endpoint not found" });
+    }
+    res.status(503).json({
+      error: "Frontend not built",
+      message: "Please build the frontend first: cd frontend && npm run build",
+    });
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`API endpoints available at http://localhost:${PORT}/api`);
+  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
 });
