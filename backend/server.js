@@ -20,10 +20,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Allow iframe embedding
+// Allow iframe embedding (including Chrome extensions)
 app.use((req, res, next) => {
+  // Remove X-Frame-Options to allow framing
   res.removeHeader("X-Frame-Options");
-  res.setHeader("Content-Security-Policy", "frame-ancestors *");
+  // Don't set frame-ancestors - it blocks Chrome extensions
+  // The extension's host_permissions handle the security
   next();
 });
 
