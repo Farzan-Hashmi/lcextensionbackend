@@ -29,6 +29,8 @@ function App() {
     } catch (err) {
       console.error(err);
     } finally {
+      setProblemDescription("");
+      setText("");
       setIsSubmitting(false);
     }
   };
