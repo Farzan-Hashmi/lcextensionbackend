@@ -71,7 +71,7 @@ async function generateCodeResponse(message) {
       {
         role: "user",
         content:
-          "Please separate the solution/explanation and the code in the following message: I want to be able to later paste the code in a markdown editor. For the explanation, keep it minimal. Only adjust my explanation for readability purposes. Don't add anything additional to the explanation." +
+          "Please separate the solution/explanation and the code in the following message: I want to be able to later paste the code in a markdown editor. For the explanation, keep edits to it minimal. Only adjust my explanation for readability purposes/coherence. Don't add anything additional to the explanation." +
           message,
       },
     ],
